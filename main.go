@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -26,8 +27,10 @@ func main() {
 	for {
 		line, _ := reader.ReadString('\n')
 		line = strings.TrimSpace(line)
+		arr := strings.Split(line, " ")
+		command := arr[0]
 
-		if location == "local" {
+		if location == "local" && command != "put" {
 			menu(line)
 		} else {
 			// Send input to the server
@@ -37,15 +40,39 @@ func main() {
 				return
 			}
 
-			// Read response from the server
-			buffer := make([]byte, 1024)
-			n, err := conn.Read(buffer)
-			if err != nil {
-				fmt.Println("Error reading data from the server: ", err)
-				return
-			}
+			if command == "get" {
+				file, err := os.Create(arr[1])
+				if err != nil {
+					fmt.Println("Error al guardar archivo: ", err)
+					return
+				}
 
-			fmt.Println(string(buffer[:n]))
+				_, err = io.Copy(file, conn)
+				file.Close()
+			} else if command == "put" {
+				file, err := os.Open(arr[1])
+				if err != nil {
+					fmt.Println("Error al abrir el archivo: ", err)
+					return
+				}
+
+				_, err = io.Copy(conn, file)
+				if err != nil {
+					fmt.Println("Error al copiar el archivo: ", err)
+					return
+				}
+				file.Close()
+			} else {
+				// Read response from the server
+				buffer := make([]byte, 1024)
+				n, err := conn.Read(buffer)
+				if err != nil {
+					fmt.Println("Error reading data from the server: ", err)
+					return
+				}
+
+				fmt.Println(string(buffer[:n]))
+			}
 		}
 
 		if line == "quit" {
@@ -88,7 +115,6 @@ func menu(line string) {
 			return
 		}
 		fmt.Println(string(output))
-	default:
-		fmt.Println("Unknown command")
+	case "get":
 	}
 }
