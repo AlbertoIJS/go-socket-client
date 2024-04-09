@@ -109,12 +109,23 @@ func menu(line string) {
 		}
 		fmt.Println(string(output))
 	case "rmdir":
-		output, err := exec.Command("rm -rf", arr[2]).Output()
+		fileInfo, err := os.Stat(arr[1])
 		if err != nil {
-			fmt.Println("Error deleting directory: ", err)
-			return
+			fmt.Println("Error al obtener información sobre el archivo o carpeta.", err)
 		}
-		fmt.Println(string(output))
+		if fileInfo.IsDir() {
+			res, err := exec.Command("rm", "-rf", arr[1]).Output()
+			if err != nil {
+				fmt.Println("Error al eliminar carpeta.", err)
+			}
+			fmt.Println(string(res))
+		} else {
+			res, err := exec.Command("rm", arr[1]).Output()
+			if err != nil {
+				fmt.Println("Error al eliminar archivo.", err)
+			}
+			fmt.Println(string(res))
+		}
 	case "get":
 	}
 }
